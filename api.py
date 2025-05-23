@@ -12,11 +12,21 @@ engine = create_engine(url)
 
 app = FastAPI()
 
-@app.get("/users/{user_id}")
-def get_user(user_id: str):
+@app.get("/users/")
+def get_user(user_id: str): 
     query = text('SELECT * FROM "user" WHERE id = :uid')
     with engine.connect() as conn:
         result = conn.execute(query, {"uid": user_id}).fetchone()
     if not result:
         raise HTTPException(status_code=404, detail="User not found")
     return dict(result._mapping)
+
+@app.get("/users/search/")
+def get_user_by_name(name: str):
+    query = text('SELECT id, name, gender, school, course_order FROM "user" WHERE name ILIKE :pattern')
+    pattern = f"%{name}%"  # thêm wildcard
+    with engine.connect() as conn:
+        result = conn.execute(query, {"pattern": pattern}).fetchall()
+    if not result:
+        raise HTTPException(status_code=404, detail="No matching users found")
+    return [dict(row._mapping) for row in result]
