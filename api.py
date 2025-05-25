@@ -94,7 +94,7 @@ def get_field(name: str = None):
         status_code=status.HTTP_200_OK
     )
 
-@app.get("/users-per-field")
+@app.get("/field/user-counts")
 def users_per_field():
     query = text("""
         SELECT field_value, COUNT(DISTINCT user_id) AS num_users
@@ -114,7 +114,7 @@ def users_per_field():
     )
 
 
-@app.get("/users-per-course")
+@app.get("/course/user-counts")
 def users_per_course():
     with engine.connect() as conn:
         query = text("""
