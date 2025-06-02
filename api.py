@@ -283,3 +283,56 @@ def predict_score(request: PredictRequest) -> Dict[int, float]:
 # curl -X POST "http://localhost:8000/predict" \
 #      -H "Content-Type: application/json" \
 #      -d '{"user_id": 0, "item_ids": [10, 25, 30]}'\
+    
+    
+class RecommendRequest(BaseModel):
+    user_id: int
+    top_k: int = 10
+
+@app.post("/recommend")
+def recommend_items(request: RecommendRequest):
+    args = parse_args_dummy()
+    user = [request.user_id]
+    
+    try:
+        model = KGAT(data_config=data_config, pretrain_data=None, args=args)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi khởi tạo model: {str(e)}")
+
+    config_proto = tf_v1.ConfigProto()
+    config_proto.gpu_options.allow_growth = True
+    sess = tf_v1.Session(config=config_proto)
+    saver = tf_v1.train.Saver()
+    
+    try:
+        ckpt_state = tf_v1.train.get_checkpoint_state(CHECKPOINT_DIR)
+        if not ckpt_state or not ckpt_state.model_checkpoint_path:
+            raise Exception("Không tìm thấy checkpoint.")
+        saver.restore(sess, ckpt_state.model_checkpoint_path)
+    except Exception as e:
+        sess.close()
+        raise HTTPException(status_code=500, detail=f"Lỗi khi khôi phục model: {str(e)}")
+
+    
+    node_dropout = [0.] * len(eval(args.layer_size))
+    mess_dropout = [0.] * len(eval(args.layer_size))
+
+    feed_dict = {
+        model.users: user,
+        model.node_dropout: node_dropout,
+        model.mess_dropout: mess_dropout
+    }
+
+    scores = sess.run(model.batch_test_scores, feed_dict=feed_dict)[0]
+    item_scores = [(i, float(scores[i])) for i in range(data_config['n_items'])]
+    item_scores.sort(key=lambda x: x[1], reverse=True)
+    top_items = item_scores[:request.top_k]
+    return {item_id: score for item_id, score in top_items}
+
+# Send the POST request
+# curl -X POST "http://localhost:8000/recommend" \
+#      -H "Content-Type: application/json" \
+#      -d '{
+#            "user_id": '5',
+#            "top_k": '"10"'
+#          }'
