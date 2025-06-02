@@ -173,6 +173,18 @@ import numpy as np
 import scipy.sparse as sp
 import tensorflow.compat.v1 as tf_v1
 import os
+import gdown
+import zipfile
+
+file_id = "12IQx-LQu83bbGtllHN1fpZUQVpTf2hPn"
+url = f"https://drive.google.com/uc?id={file_id}"
+output = "kgat.zip"
+
+gdown.download(url, output, quiet=False)
+
+# Step 2: Unzip it
+with zipfile.ZipFile(output, 'r') as zip_ref:
+    zip_ref.extractall('kgat')  # Extracts to ./data directory
 
 # Tắt eager execution do dùng TF1.x
 tf_v1.disable_eager_execution()
