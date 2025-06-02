@@ -2,3 +2,8 @@ fastapi==0.110.0
 uvicorn[standard]==0.29.0
 sqlalchemy==2.0.30
 psycopg2-binary==2.9.9
+flask 
+numpy 
+scipy 
+tensorflow
+numpy==1.26.4
