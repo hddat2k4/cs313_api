@@ -148,7 +148,7 @@ def get_summary():
     if not row_counts:
         raise HTTPException(status_code=404, detail="No tables found or failed to count rows")
 
-    return {"table_counts": row_counts}
+    # return {"table_counts": row_counts}
     return Response(
         content=json.dumps({"table_counts": row_counts}, ensure_ascii=False),
         media_type="application/json; charset=utf-8",
