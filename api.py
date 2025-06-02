@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 import psycopg2
@@ -10,6 +11,15 @@ url = "postgresql://mooc_cs313_user:8sSbCiaKNmRdYyQRaNpwiyefbDbhmRtk@dpg-d0o7mkm
 engine = create_engine(url)
 
 app = FastAPI()
+
+# CORS để frontend truy cập API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Thay bằng domain frontend thật khi deploy
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/user")
 def get_user(id: str = None, name: str = None): 
