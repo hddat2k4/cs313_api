@@ -176,15 +176,15 @@ import os
 import gdown
 import zipfile
 
-file_id = "12IQx-LQu83bbGtllHN1fpZUQVpTf2hPn"
-url = f"https://drive.google.com/uc?id={file_id}"
-output = "kgat.zip"
+# file_id = "12IQx-LQu83bbGtllHN1fpZUQVpTf2hPn"
+# url = f"https://drive.google.com/uc?id={file_id}"
+# output = "kgat.zip"
 
-gdown.download(url, output, quiet=False)
+# gdown.download(url, output, quiet=False)
 
-# Step 2: Unzip it
-with zipfile.ZipFile(output, 'r') as zip_ref:
-    zip_ref.extractall('kgat')  # Extracts to ./data directory
+# # Step 2: Unzip it
+# with zipfile.ZipFile(output, 'r') as zip_ref:
+#     zip_ref.extractall('kgat')  # Extracts to ./data directory
 
 # Tắt eager execution do dùng TF1.x
 tf_v1.disable_eager_execution()
@@ -310,30 +310,30 @@ def predict_score(request: PredictRequest) -> Dict[int, float]:
 class RecommendRequest(BaseModel):
     user_id: int
     top_k: int = 10
+    
+args = parse_args_dummy()
+try:
+    model = KGAT(data_config=data_config, pretrain_data=None, args=args)
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Lỗi khi khởi tạo model: {str(e)}")
+
+config_proto = tf_v1.ConfigProto()
+config_proto.gpu_options.allow_growth = True
+sess = tf_v1.Session(config=config_proto)
+saver = tf_v1.train.Saver()
+
+try:
+    ckpt_state = tf_v1.train.get_checkpoint_state(CHECKPOINT_DIR)
+    if not ckpt_state or not ckpt_state.model_checkpoint_path:
+        raise Exception("Không tìm thấy checkpoint.")
+    saver.restore(sess, ckpt_state.model_checkpoint_path)
+except Exception as e:
+    sess.close()
+    raise HTTPException(status_code=500, detail=f"Lỗi khi khôi phục model: {str(e)}")
 
 @app.post("/recommend")
 def recommend_items(request: RecommendRequest):
-    args = parse_args_dummy()
     user = [request.user_id]
-    
-    try:
-        model = KGAT(data_config=data_config, pretrain_data=None, args=args)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Lỗi khi khởi tạo model: {str(e)}")
-
-    config_proto = tf_v1.ConfigProto()
-    config_proto.gpu_options.allow_growth = True
-    sess = tf_v1.Session(config=config_proto)
-    saver = tf_v1.train.Saver()
-    
-    try:
-        ckpt_state = tf_v1.train.get_checkpoint_state(CHECKPOINT_DIR)
-        if not ckpt_state or not ckpt_state.model_checkpoint_path:
-            raise Exception("Không tìm thấy checkpoint.")
-        saver.restore(sess, ckpt_state.model_checkpoint_path)
-    except Exception as e:
-        sess.close()
-        raise HTTPException(status_code=500, detail=f"Lỗi khi khôi phục model: {str(e)}")
 
     
     node_dropout = [0.] * len(eval(args.layer_size))
